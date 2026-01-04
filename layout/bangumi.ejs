@@ -1,254 +1,257 @@
-<div class="watchlist-container">
-    <% const categories=[{ key: 'series' , name: '📺 电视剧' }, { key: 'movies' , name: '🎬 电影' }, { key: 'anime' ,
-        name: '🎌 动漫' } ]; %>
-
-        <% categories.forEach(function(cat){ %>
+<div class="watchlist-app">
+    <nav class="category-tabs">
+        <%
+        const categoryMap = [
+            { key: 'series', name: '电视剧', icon: '📺' },
+            { key: 'movies', name: '电影', icon: '🎬' },
+            { key: 'anime', name: '动漫', icon: '🎌' }
+        ];
+        %>
+        <% categoryMap.forEach(function(cat, index){ %>
             <% if (site.data.bangumi[cat.key]) { %>
-                <section class="category-section" id="section-<%= cat.key %>">
-                    <div class="category-header">
-                        <h2 class="category-title">
-                            <%= cat.name %>
-                        </h2>
-                        <div class="scroll-controls">
-                            <button class="ctrl-btn prev" onclick="scrollGrid('<%= cat.key %>', -1)">‹</button>
-                            <button class="ctrl-btn next" onclick="scrollGrid('<%= cat.key %>', 1)">›</button>
-                        </div>
-                    </div>
+                <button
+                        class="tab-btn <%= index === 0 ? 'active' : '' %>"
+                        onclick="switchTab(this, '<%= cat.key %>')"
+                >
+                    <span class="tab-icon"><%= cat.icon %></span>
+                    <span class="tab-text"><%= cat.name %></span>
+                    <span class="tab-count"><%= site.data.bangumi[cat.key].length %></span>
+                </button>
+            <% } %>
+        <% }); %>
+    </nav>
 
-                    <div class="media-scroller" id="scroller-<%= cat.key %>">
+    <div class="tab-content-container">
+        <% categoryMap.forEach(function(cat, index){ %>
+            <% if (site.data.bangumi[cat.key]) { %>
+                <section
+                        class="tab-panel <%= index === 0 ? 'active' : '' %>"
+                        id="panel-<%= cat.key %>"
+                        style="<%= index === 0 ? 'display: block;' : 'display: none;' %>"
+                >
+                    <div class="media-grid">
                         <% site.data.bangumi[cat.key].forEach(function(item){ %>
                             <div class="media-card">
                                 <div class="media-cover">
-                                    <img src="https://images.weserv.nl/?url=<%= item.cover %>" alt="<%= item.title %>"
-                                        loading="lazy">
+                                    <img src="https://images.weserv.nl/?url=<%= item.cover %>" alt="<%= item.title %>" loading="lazy">
                                     <% if (item.status) { %>
-                                        <span class="status-tag">
-                                            <%= item.status %>
-                                        </span>
-                                        <% } %>
-                                            <% if (item.recommend) { %>
-                                                <div class="recommend-badge">推荐 <%= item.recommend %>⭐</div>
-                                                <% } %>
+                                        <div class="status-tag"><%= item.status %></div>
+                                    <% } %>
                                 </div>
+
                                 <div class="media-info">
-                                    <h3 class="media-name">
-                                        <%= item.title %>
-                                    </h3>
-                                    <div class="media-meta">
-                                        <span class="media-rating">豆瓣 <%= item.rating %></span>
+                                    <h3 class="media-name"><%= item.title %></h3>
+
+                                    <div class="tags-row">
+                                        <% if (item.category) { %>
+                                            <% if (Array.isArray(item.category)) { %>
+                                                <% item.category.forEach(function(tag){ %>
+                                                    <span class="meta-tag"><%= tag %></span>
+                                                <% }); %>
+                                            <% } else { %>
+                                                <span class="meta-tag"><%= item.category %></span>
+                                            <% } %>
+                                        <% } %>
                                     </div>
-                                    <p class="media-desc">
-                                        <%= item.desc %>
-                                    </p>
+
+                                    <div class="ratings-scroll">
+                                        <% if (item.seasons) { %>
+                                            <% item.seasons.forEach(function(s, i) { %>
+                                                <span class="s-pill">S<%= i+1 %>:<b><%= s.rating || '-' %></b></span>
+                                            <% }); %>
+                                        <% } else { %>
+                                            <span class="single-rate">⭐ <%= item.rating || 'N/A' %></span>
+                                        <% } %>
+                                    </div>
+
+                                    <p class="media-desc"><%= item.desc %></p>
                                 </div>
                             </div>
-                            <% }); %>
+                        <% }); %>
                     </div>
                 </section>
-                <% } %>
-                    <% }); %>
+            <% } %>
+        <% }); %>
+    </div>
 </div>
 
 <script>
     /**
-     * 左右滑动控制函数
-     * @param {string} id 类别ID
-     * @param {number} direction 方向 (1 为右, -1 为左)
+     * 切换分类面板逻辑
      */
-    function scrollGrid(id, direction) {
-        const container = document.getElementById('scroller-' + id);
-        const scrollAmount = container.clientWidth * 0.8; // 每次滑动容器宽度的80%
-        container.scrollBy({
-            left: direction * scrollAmount,
-            behavior: 'smooth' // 平滑滚动
+    function switchTab(btn, key) {
+        // 1. 处理按钮高亮
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // 2. 处理面板显示隐藏
+        document.querySelectorAll('.tab-panel').forEach(panel => {
+            panel.style.display = 'none';
+            panel.classList.remove('active');
         });
+
+        const targetPanel = document.getElementById('panel-' + key);
+        if (targetPanel) {
+            targetPanel.style.display = 'block';
+            // 延迟触发动画
+            setTimeout(() => targetPanel.classList.add('active'), 10);
+        }
     }
 </script>
 
 <style>
-    .watchlist-container {
+    /* 核心布局变量 */
+    :root {
+        --primary: #4a90e2;
+        --tag-bg: #f1f3f5;
+        --text-main: #2c3e50;
+        --text-muted: #95a5a6;
+        --card-radius: 12px;
+    }
+
+    .watchlist-app {
         max-width: 1200px;
-        margin: 0 auto;
-        padding: 10px;
-        position: relative;
+        margin: 20px auto;
+        padding: 0 15px;
     }
 
-    .category-header {
+    /* 顶部导航 - 精简美化 */
+    .category-tabs {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: 2rem 0 1rem;
-        padding: 0 5px;
+        justify-content: center;
+        gap: 10px;
+        margin-bottom: 25px;
+        background: #fff;
+        padding: 6px;
+        border-radius: 40px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
 
-    .category-title {
-        margin: 0 !important;
-        font-size: 1.5rem;
-        border-left: 4px solid #4a90e2;
-        padding-left: 12px;
-    }
-
-    /* 按钮样式 */
-    .scroll-controls {
-        display: flex;
-        gap: 8px;
-    }
-
-    .ctrl-btn {
-        background: var(--block, #f0f2f5);
-        color: var(--text-main, #333);
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
+    .tab-btn {
+        border: none;
+        background: transparent;
+        padding: 8px 18px;
+        border-radius: 30px;
         cursor: pointer;
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 20px;
+        gap: 8px;
+        color: var(--text-muted);
         transition: all 0.2s;
-        line-height: 1;
-        padding-bottom: 4px;
-        /* 视觉微调 */
     }
 
-    .ctrl-btn:hover {
-        background: #4a90e2;
+    .tab-btn.active {
+        background: var(--primary);
         color: #fff;
-        border-color: #4a90e2;
+        box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3);
     }
 
-    /* 关键：隐藏滚动条但保留滚动功能 */
-    .media-scroller {
-        display: flex;
+    .tab-count { font-size: 10px; opacity: 0.7; }
+
+    /* 网格：一行显示 4-5 个（视屏幕宽度） */
+    .media-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
         gap: 20px;
-        overflow-x: auto;
-        padding: 10px 5px 20px;
-
-        /* 隐藏 Firefox 滚动条 */
-        scrollbar-width: none;
-        /* 隐藏 IE/Edge 滚动条 */
-        -ms-overflow-style: none;
-
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
     }
 
-    /* 隐藏 Chrome, Safari, Opera 的滚动条 */
-    .media-scroller::-webkit-scrollbar {
-        display: none;
-    }
-
-    .media-scroller::-webkit-scrollbar-track {
-        background: transparent;
-    }
-
-    .media-scroller::-webkit-scrollbar-thumb {
-        background: #ddd;
-        border-radius: 10px;
-    }
-
-    /* 卡片基础设置 */
     .media-card {
-        flex: 0 0 200px;
-        scroll-snap-align: start;
-        background: var(--card-bg, #fff);
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-        transition: transform 0.3s ease;
+        background: #fff;
+        border-radius: var(--card-radius);
+        border: 1px solid #eee;
         overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        border: 1px solid rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    .media-card:hover {
-        transform: translateY(-5px);
-    }
+    .media-card:hover { transform: translateY(-6px); box-shadow: 0 10px 20px rgba(0,0,0,0.08); }
 
+    /* 封面与右上角状态标签 */
     .media-cover {
         position: relative;
-        height: 260px;
-        width: 100%;
+        aspect-ratio: 2 / 2.8;
     }
 
-    .media-cover img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
+    .media-cover img { width: 100%; height: 100%; object-fit: cover; }
 
-    /* 标签与文字 */
     .status-tag {
         position: absolute;
         top: 10px;
         right: 10px;
-        background: rgba(0, 0, 0, 0.6);
-        color: #fff;
-        padding: 2px 8px;
+        background: rgba(0,0,0,0.7);
+        color: white;
         font-size: 10px;
+        padding: 2px 8px;
         border-radius: 4px;
+        backdrop-filter: blur(4px);
     }
 
-    .recommend-badge {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
-        color: #ff9f43;
-        font-size: 11px;
-        font-weight: bold;
-        padding: 15px 10px 5px;
-    }
-
-    .media-info {
-        padding: 12px;
-        flex-grow: 1;
-    }
+    /* 信息区 */
+    .media-info { padding: 12px; }
 
     .media-name {
-        font-size: 1rem !important;
-        margin: 0 0 4px 0 !important;
-        font-weight: bold;
+        font-size: 15px !important;
+        margin: 0 0 6px 0 !important;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+        color: var(--text-main);
     }
 
-    .media-rating {
-        font-size: 0.75rem;
+    /* 分类标签样式 (支持多标签) */
+    .tags-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-bottom: 8px;
+    }
+
+    .meta-tag {
+        background: var(--tag-bg);
         color: #7f8c8d;
-        background: #f0f0f0;
-        padding: 2px 6px;
+        font-size: 10px;
+        padding: 1px 6px;
         border-radius: 4px;
     }
 
+    /* 评分横向排列 */
+    .ratings-scroll {
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        margin-bottom: 8px;
+        scrollbar-width: none;
+    }
+    .ratings-scroll::-webkit-scrollbar { display: none; }
+
+    .s-pill {
+        font-size: 10px;
+        background: #fff9f0;
+        color: #e67e22;
+        padding: 1px 5px;
+        border-radius: 3px;
+        border: 1px solid #ffecdb;
+        white-space: nowrap;
+    }
+
     .media-desc {
-        font-size: 0.8rem;
-        color: #666;
+        font-size: 12px;
+        color: #7f8c8d;
         line-height: 1.5;
-        margin-top: 8px;
+        margin: 0;
         display: -webkit-box;
         -webkit-line-clamp: 2;
-        line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
 
-    @media (max-width: 768px) {
-        .media-card {
-            flex: 0 0 160px;
-        }
+    /* 动画 */
+    .tab-panel { opacity: 0; transform: translateY(10px); transition: all 0.4s; }
+    .tab-panel.active { opacity: 1; transform: translateY(0); }
 
-        .media-cover {
-            height: 210px;
-        }
-
-        .scroll-controls {
-            display: none;
-        }
-
-        /* 手机端通常靠手势，隐藏按钮 */
+    /* 手机端适配：一行2个 */
+    @media (max-width: 500px) {
+        .media-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .tab-text { display: none; }
+        .tab-btn { padding: 8px 12px; }
     }
 </style>
